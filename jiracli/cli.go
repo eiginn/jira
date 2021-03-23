@@ -111,6 +111,9 @@ type GlobalOptions struct {
 	// JiraDeploymentType can be `cloud` or `server`, if not set it will be inferred from
 	// the /rest/api/2/serverInfo REST API.
 	JiraDeploymentType figtree.StringOption `yaml:"jira-deployment-type,omitempty" json:"jira-deployment-type,omitempty"`
+
+	// ExtraHeader will include an extra header in all requests
+	ExtraHeader figtree.StringOption `yaml:"extra-header,omitempty" json:"extra-header,omitempty"`
 }
 
 type CommonOptions struct {
@@ -157,6 +160,7 @@ func register(app *kingpin.Application, o *oreo.Client, fig *figtree.FigTree) {
 	globals := GlobalOptions{
 		User:                 figtree.NewStringOption(os.Getenv("USER")),
 		AuthenticationMethod: figtree.NewStringOption("session"),
+		ExtraHeader:          figtree.NewStringOption(os.Getenv("CFACCESSTOKEN")),
 	}
 	app.Flag("endpoint", "Base URI to use for Jira").Short('e').SetValue(&globals.Endpoint)
 	app.Flag("insecure", "Disable TLS certificate verification").Short('k').SetValue(&globals.Insecure)
@@ -172,6 +176,9 @@ func register(app *kingpin.Application, o *oreo.Client, fig *figtree.FigTree) {
 			token := globals.GetPass()
 			authHeader := fmt.Sprintf("Basic %s", base64.StdEncoding.EncodeToString([]byte(fmt.Sprintf("%s:%s", globals.Login.Value, token))))
 			req.Header.Add("Authorization", authHeader)
+		}
+		if globals.ExtraHeader.Value != "" {
+			req.Header.Add("cf-access-token", globals.ExtraHeader.Value)
 		}
 		return req, nil
 	})
